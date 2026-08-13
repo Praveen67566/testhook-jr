@@ -11,7 +11,7 @@ const envSchema = z.object({
     .int()
     .min(1)
     .max(65535)
-    .default(3020),
+    .default(7146),
 
   HOST: z.string().min(1).default('127.0.0.1'),
 
@@ -50,6 +50,16 @@ const envSchema = z.object({
     .min(0)
     .max(10)
     .default(1),
+
+  LEADS_ADMIN_USERNAME: z
+  .string()
+  .min(3)
+  .max(100),
+
+  LEADS_ADMIN_PASSWORD: z
+  .string()
+  .min(16)
+  .max(200),
 });
 
 const result = envSchema.safeParse(process.env);

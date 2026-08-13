@@ -1,10 +1,16 @@
 import express, { Router } from 'express';
+import basicAuth from 'express-basic-auth';
+
+import { env } from '../configs/env.js';
 
 import { leadCors } from '../middlewares/cors.js';
 import { leadRateLimiter } from '../middlewares/rate-limit.js';
 import { requireJsonContentType } from '../middlewares/json-only.js';
 
-import { createLeadHandler, getLeads } from '../controllers/leadController.js';
+import {
+  createLeadHandler,
+  getLeads,
+} from '../controllers/leadController.js';
 
 const router = Router();
 
@@ -23,17 +29,11 @@ const leadTypes = [
 for (const leadType of leadTypes) {
   const path = `/${leadType}`;
 
-  /*
-   * Browser CORS preflight.
-   */
   router.options(
     path,
     leadCors
   );
 
-  /*
-   * Actual lead submission.
-   */
   router.post(
     path,
     leadCors,
@@ -44,15 +44,39 @@ for (const leadType of leadTypes) {
   );
 }
 
-
 /*
- * Get stored leads.
- *
- * Ideally keep this internal/admin-only because
- * it returns names, emails and phone numbers.
+ * Protect GET /leads only.
  */
+const leadsBasicAuth = basicAuth({
+  authorizer: (username, password) => {
+    const usernameMatches =
+      basicAuth.safeCompare(
+        username,
+        env.LEADS_ADMIN_USERNAME
+      );
+
+    const passwordMatches =
+      basicAuth.safeCompare(
+        password,
+        env.LEADS_ADMIN_PASSWORD
+      );
+
+    return usernameMatches && passwordMatches;
+  },
+
+  challenge: true,
+
+  realm: 'JR Compliance Leads',
+
+  unauthorizedResponse: {
+    success: false,
+    error: 'Unauthorized.',
+  },
+});
+
 router.get(
   '/leads',
+  leadsBasicAuth,
   getLeads
 );
 
