@@ -5,6 +5,7 @@ import { env } from './configs/env.js';
 
 import leadRoutes from './routers/leadRoutes.js';
 import healthRoutes from './routers/healthRoutes.js';
+import eventRoutes from './routers/eventRoutes.js';
 
 import {
   notFoundHandler,
@@ -46,6 +47,7 @@ app.use((req, res, next) => {
 
 app.use(healthRoutes);
 app.use(leadRoutes);
+app.use(eventRoutes);
 
 app.use(notFoundHandler);
 
