@@ -4,6 +4,15 @@ import {
 } from '../services/eventService.js';
 
 import { whatsappEventPayloadSchema } from '../validations/eventSchema.js';
+import {
+  createAdminPageUrl,
+  createPagination,
+  formatAdminDate,
+  formatMetadata,
+  parsePagination,
+  shouldReturnAdminJson,
+  toIsoDate,
+} from '../utils/admin-view.js';
 
 function formatValidationErrors(error) {
   const fields = {};
@@ -81,46 +90,67 @@ export async function getWhatsappEvents(
   next
 ) {
   try {
-    let page = Number.parseInt(
-      req.query.page ?? '1',
-      10
+    const { page, limit } = parsePagination(
+      req.query
     );
 
-    let limit = Number.parseInt(
-      req.query.limit ?? '20',
-      10
-    );
+    const { events, total } =
+      await findWhatsappEvents({
+        page,
+        limit,
+      });
 
-    /*
-     * Prevent invalid pagination values such as:
-     *
-     * ?page=abc
-     * ?limit=xyz
-     */
-    if (!Number.isInteger(page) || page < 1) {
-      page = 1;
-    }
-
-    if (!Number.isInteger(limit) || limit < 1) {
-      limit = 20;
-    }
-
-    /*
-     * Do not allow extremely large responses.
-     */
-    limit = Math.min(limit, 100);
-
-    const events = await findWhatsappEvents({
-      page,
-      limit,
-    });
-
-    return res.status(200).json({
+    const response = {
       success: true,
       page,
       limit,
       count: events.length,
+      total,
       events,
+    };
+
+    res.vary('Accept');
+
+    const returnJson = shouldReturnAdminJson(req);
+    const lastPage = Math.max(
+      Math.ceil(total / limit),
+      1
+    );
+
+    if (!returnJson && page > lastPage) {
+      return res.redirect(
+        302,
+        createAdminPageUrl(
+          '/whatsapp',
+          lastPage,
+          limit,
+          req.query.format === 'html'
+            ? 'html'
+            : undefined
+        )
+      );
+    }
+
+    if (returnJson) {
+      return res.status(200).json(response);
+    }
+
+    return res.status(200).render('whatsapp', {
+      ...response,
+      pagination: createPagination({
+        pathname: '/whatsapp',
+        page,
+        limit,
+        total,
+        count: events.length,
+        format:
+          req.query.format === 'html'
+            ? 'html'
+            : undefined,
+      }),
+      formatAdminDate,
+      formatMetadata,
+      toIsoDate,
     });
   } catch (error) {
     next(error);

@@ -69,34 +69,46 @@ export async function findLeads({
 }) {
   const offset = (page - 1) * limit;
 
-  const result = await pool.query(
-    `
-      SELECT
-        id::text AS id,
-        lead_type,
-        name,
-        email,
-        phone,
-        message,
-        page_name,
-        form_name,
-        source,
-        responsible,
-        stage,
-        utm_source,
-        utm_medium,
-        utm_campaign,
-        created_at
+  const [result, countResult] = await Promise.all([
+    pool.query(
+      `
+        SELECT
+          id::text AS id,
+          lead_type,
+          name,
+          email,
+          phone,
+          message,
+          page_name,
+          form_name,
+          source,
+          responsible,
+          stage,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          created_at
+        FROM leads
+        ORDER BY created_at DESC, id DESC
+        LIMIT $1
+        OFFSET $2
+      `,
+      [
+        limit,
+        offset,
+      ]
+    ),
+    pool.query(`
+      SELECT COUNT(*)::text AS total
       FROM leads
-      ORDER BY created_at DESC
-      LIMIT $1
-      OFFSET $2
-    `,
-    [
-      limit,
-      offset,
-    ]
-  );
+    `),
+  ]);
 
-  return result.rows;
+  return {
+    leads: result.rows,
+    total: Number.parseInt(
+      countResult.rows[0]?.total ?? '0',
+      10
+    ),
+  };
 }

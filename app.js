@@ -1,5 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { env } from './configs/env.js';
 
@@ -13,8 +15,17 @@ import {
 } from './middlewares/error-handler.js';
 
 const app = express();
+const applicationDirectory = path.dirname(
+  fileURLToPath(import.meta.url)
+);
 
 app.disable('x-powered-by');
+
+app.set('view engine', 'ejs');
+app.set(
+  'views',
+  path.join(applicationDirectory, 'views')
+);
 
 /*
  * Nginx is the only proxy directly in front
@@ -27,12 +38,34 @@ app.set(
     : env.TRUST_PROXY_HOPS
 );
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        'upgrade-insecure-requests':
+          env.NODE_ENV === 'development'
+            ? null
+            : [],
+      },
+    },
+  })
+);
 
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+
+app.use(
+  '/admin-assets',
+  express.static(
+    path.join(applicationDirectory, 'public'),
+    {
+      fallthrough: true,
+      index: false,
+    }
+  )
+);
 
 /*
  * Do NOT add:

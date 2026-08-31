@@ -1,0 +1,109 @@
+<%- include('partials/header', {
+  title: 'WhatsApp events',
+  activePage: 'whatsapp'
+}) %>
+
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">Click activity</p>
+    <h1>WhatsApp events</h1>
+    <p class="page-heading__description">
+      Inspect WhatsApp clicks and the page context captured with each event.
+    </p>
+  </div>
+
+  <a class="secondary-button" href="<%= pagination.jsonUrl %>">View JSON</a>
+</section>
+
+<section class="summary-grid" aria-label="WhatsApp event summary">
+  <article class="summary-card">
+    <span class="summary-card__label">Total events</span>
+    <strong class="summary-card__value"><%= total.toLocaleString('en-IN') %></strong>
+  </article>
+  <article class="summary-card">
+    <span class="summary-card__label">On this page</span>
+    <strong class="summary-card__value"><%= count.toLocaleString('en-IN') %></strong>
+  </article>
+  <article class="summary-card">
+    <span class="summary-card__label">Current page</span>
+    <strong class="summary-card__value"><%= page.toLocaleString('en-IN') %></strong>
+  </article>
+</section>
+
+<section class="data-panel" aria-labelledby="events-table-title">
+  <div class="data-panel__header">
+    <div>
+      <h2 id="events-table-title">Latest events</h2>
+      <p>Newest WhatsApp activity appears first.</p>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table class="data-table events-table">
+      <caption class="visually-hidden">WhatsApp events</caption>
+      <thead>
+        <tr>
+          <th scope="col">Received</th>
+          <th scope="col">Event</th>
+          <th scope="col">Page</th>
+          <th scope="col">Message</th>
+          <th scope="col">Review</th>
+          <th scope="col"><span class="visually-hidden">Metadata</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (events.length === 0) { %>
+          <tr class="empty-row">
+            <td colspan="6">
+              <div class="empty-state">
+                <span class="empty-state__mark" aria-hidden="true">0</span>
+                <strong>No WhatsApp events found</strong>
+                <p>New WhatsApp click events will appear here.</p>
+              </div>
+            </td>
+          </tr>
+        <% } %>
+
+        <% for (const event of events) { %>
+          <tr>
+            <td data-label="Received">
+              <time datetime="<%= toIsoDate(event.event_time) %>"><%= formatAdminDate(event.event_time) %></time>
+              <span class="record-id">ID <%= event.id %></span>
+            </td>
+            <td data-label="Event">
+              <strong class="primary-value"><%= event.event_info %></strong>
+            </td>
+            <td data-label="Page">
+              <span class="secondary-value"><%= event.page_name %></span>
+            </td>
+            <td data-label="Message">
+              <span class="message-preview preserve-lines"><%= event.text %></span>
+            </td>
+            <td data-label="Review">
+              <% if (event.check_with_nyife) { %>
+                <span class="badge badge--green">Reviewed</span>
+              <% } else { %>
+                <span class="badge badge--amber">Pending</span>
+              <% } %>
+            </td>
+            <td data-label="Metadata" class="details-cell">
+              <details class="row-details">
+                <summary>View details</summary>
+                <div class="details-popover details-popover--metadata">
+                  <span class="detail-label">Full message</span>
+                  <p class="full-message preserve-lines"><%= event.text %></p>
+                  <span class="detail-label">Metadata</span>
+                  <pre><%= formatMetadata(event.metadata) %></pre>
+                </div>
+              </details>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <%- include('partials/pagination', { pagination }) %>
+</section>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title><%= title %> | JR Compliance Admin</title>
+    <link rel="stylesheet" href="/admin-assets/admin.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="brand" href="/leads" aria-label="JR Compliance Admin home">
+          <span class="brand__mark" aria-hidden="true">JR</span>
+          <span>
+            <strong>JR Compliance</strong>
+            <small>Admin dashboard</small>
+          </span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Admin pages">
+          <a
+            class="primary-nav__link<%= activePage === 'leads' ? ' is-active' : '' %>"
+            href="/leads"
+            <% if (activePage === 'leads') { %>aria-current="page"<% } %>
+          >Leads</a>
+          <a
+            class="primary-nav__link<%= activePage === 'whatsapp' ? ' is-active' : '' %>"
+            href="/whatsapp"
+            <% if (activePage === 'whatsapp') { %>aria-current="page"<% } %>
+          >WhatsApp events</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page-shell">

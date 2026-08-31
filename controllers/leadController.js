@@ -4,6 +4,14 @@ import {
 } from '../services/leadService.js';
 
 import { leadPayloadSchema } from '../validations/leadSchema.js';
+import {
+  createAdminPageUrl,
+  createPagination,
+  formatAdminDate,
+  parsePagination,
+  shouldReturnAdminJson,
+  toIsoDate,
+} from '../utils/admin-view.js';
 
 function formatValidationErrors(error) {
   const fields = {};
@@ -54,30 +62,65 @@ export function createLeadHandler(leadType) {
 
 export async function getLeads(req, res, next) {
   try {
-    const page = Math.max(
-      Number.parseInt(req.query.page ?? '1', 10),
-      1
+    const { page, limit } = parsePagination(
+      req.query
     );
 
-    const limit = Math.min(
-      Math.max(
-        Number.parseInt(req.query.limit ?? '20', 10),
-        1
-      ),
-      100
-    );
-
-    const leads = await findLeads({
+    const { leads, total } = await findLeads({
       page,
       limit,
     });
 
-    return res.status(200).json({
+    const response = {
       success: true,
       page,
       limit,
       count: leads.length,
+      total,
       leads,
+    };
+
+    res.vary('Accept');
+
+    const returnJson = shouldReturnAdminJson(req);
+    const lastPage = Math.max(
+      Math.ceil(total / limit),
+      1
+    );
+
+    if (!returnJson && page > lastPage) {
+      return res.redirect(
+        302,
+        createAdminPageUrl(
+          '/leads',
+          lastPage,
+          limit,
+          req.query.format === 'html'
+            ? 'html'
+            : undefined
+        )
+      );
+    }
+
+    if (returnJson) {
+      return res.status(200).json(response);
+    }
+
+    return res.status(200).render('leads', {
+      ...response,
+      pagination: createPagination({
+        pathname: '/leads',
+        page,
+        limit,
+        total,
+        count: leads.length,
+        format:
+          req.query.format === 'html'
+            ? 'html'
+            : undefined,
+      }),
+      formatAdminDate,
+      toIsoDate,
     });
   } catch (error) {
     next(error);

@@ -62,7 +62,7 @@ export async function findWhatsappEvents({
       event_time,
       check_with_nyife
     FROM events
-    ORDER BY event_time DESC
+    ORDER BY event_time DESC, id DESC
     LIMIT $1
     OFFSET $2
   `;
@@ -72,10 +72,19 @@ export async function findWhatsappEvents({
     offset,
   ];
 
-  const result = await pool.query(
-    query,
-    values
-  );
+  const [result, countResult] = await Promise.all([
+    pool.query(query, values),
+    pool.query(`
+      SELECT COUNT(*)::text AS total
+      FROM events
+    `),
+  ]);
 
-  return result.rows;
+  return {
+    events: result.rows,
+    total: Number.parseInt(
+      countResult.rows[0]?.total ?? '0',
+      10
+    ),
+  };
 }

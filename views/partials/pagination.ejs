@@ -1,0 +1,44 @@
+<div class="table-footer">
+  <p class="result-range" aria-live="polite">
+    <% if (pagination.total === 0) { %>
+      No records
+    <% } else if (pagination.firstItem === 0) { %>
+      No records on this page &middot; <%= pagination.total.toLocaleString('en-IN') %> total
+    <% } else { %>
+      Showing <strong><%= pagination.firstItem.toLocaleString('en-IN') %>&ndash;<%= pagination.lastItem.toLocaleString('en-IN') %></strong>
+      of <strong><%= pagination.total.toLocaleString('en-IN') %></strong>
+    <% } %>
+  </p>
+
+  <div class="pagination-controls">
+    <div class="limit-picker" aria-label="Rows per page">
+      <span>Rows:</span>
+      <% for (const option of pagination.limitUrls) { %>
+        <a
+          href="<%= option.url %>"
+          class="limit-picker__link<%= option.value === pagination.limit ? ' is-active' : '' %>"
+          <% if (option.value === pagination.limit) { %>aria-current="true"<% } %>
+        ><%= option.value %></a>
+      <% } %>
+    </div>
+
+    <nav class="pager" aria-label="Pagination">
+      <% if (pagination.previousUrl) { %>
+        <a class="pager__button" href="<%= pagination.previousUrl %>">&larr; Previous</a>
+      <% } else { %>
+        <span class="pager__button is-disabled" aria-disabled="true">&larr; Previous</span>
+      <% } %>
+
+      <span class="pager__status">
+        Page <strong><%= pagination.page.toLocaleString('en-IN') %></strong>
+        of <strong><%= pagination.totalPages.toLocaleString('en-IN') %></strong>
+      </span>
+
+      <% if (pagination.nextUrl) { %>
+        <a class="pager__button" href="<%= pagination.nextUrl %>">Next &rarr;</a>
+      <% } else { %>
+        <span class="pager__button is-disabled" aria-disabled="true">Next &rarr;</span>
+      <% } %>
+    </nav>
+  </div>
+</div>
