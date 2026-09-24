@@ -9,6 +9,10 @@ import {
   createWhatsappEvent,
   getWhatsappEvents,
 } from '../controllers/eventController.js';
+import {
+  createCallEvent,
+  getCallEvents,
+} from '../controllers/callController.js';
 
 const router = Router();
 
@@ -26,6 +30,11 @@ router.options(
   leadCors
 );
 
+router.options(
+  '/call',
+  leadCors
+);
+
 /*
  * Public endpoint
  * Used by frontend before redirecting user to WhatsApp.
@@ -40,6 +49,18 @@ router.post(
 );
 
 /*
+ * Public endpoint used by the frontend when a user clicks a phone link.
+ */
+router.post(
+  '/call',
+  leadCors,
+  eventRateLimiter,
+  requireJsonContentType,
+  jsonParser,
+  createCallEvent
+);
+
+/*
  * Admin endpoint
  *
  * Example:
@@ -49,6 +70,18 @@ router.get(
   '/whatsapp',
   adminBasicAuth,
   getWhatsappEvents
+);
+
+/*
+ * Admin endpoint
+ *
+ * Example:
+ * GET /call?page=1&limit=20
+ */
+router.get(
+  '/call',
+  adminBasicAuth,
+  getCallEvents
 );
 
 export default router;

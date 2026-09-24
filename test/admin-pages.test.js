@@ -70,7 +70,11 @@ test('admin routes share one Basic Auth protection space', async () => {
     throw new Error('The database should not be queried.');
   };
 
-  for (const pathname of ['/leads', '/whatsapp']) {
+  for (const pathname of [
+    '/leads',
+    '/whatsapp',
+    '/call',
+  ]) {
     const response = await fetch(`${baseUrl}${pathname}`);
 
     assert.equal(response.status, 401);
@@ -134,6 +138,7 @@ test('GET /leads renders escaped lead data and pagination', async () => {
   assert.match(html, /&lt;script&gt;alert\(&#34;xss&#34;\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>alert\("xss"\)<\/script>/);
   assert.match(html, /href="\/whatsapp"/);
+  assert.match(html, /href="\/call"/);
   assert.match(html, /href="\/leads\?page=1&amp;limit=20"/);
   assert.match(html, /href="\/leads\?page=2&amp;limit=20&amp;format=json"/);
   assert.deepEqual(queryValues, [[20, 20]]);
@@ -185,6 +190,52 @@ test('GET /whatsapp renders metadata safely and an empty state', async () => {
 
   assert.equal(response.status, 200);
   assert.match(html, /No WhatsApp events found/);
+});
+
+test('GET /call renders call events and filters its database query', async () => {
+  const callEvents = [
+    {
+      id: '10',
+      event_info: 'call_click',
+      page_name: 'Home',
+      text: '1800-121-410-410',
+      metadata: {
+        button_location: 'navbar_mobile',
+        phone_number: '1800121410410',
+      },
+      event_time: new Date('2026-08-31T09:35:00.000Z'),
+      check_with_nyife: false,
+    },
+  ];
+
+  pool.query = async (query, values) => {
+    const sql = String(query);
+
+    if (sql.includes('COUNT(*)') && sql.includes('FROM events')) {
+      assert.match(sql, /event_info = 'call_click'/);
+      return { rows: [{ total: '1' }] };
+    }
+
+    if (sql.includes('FROM events')) {
+      assert.match(sql, /event_info = 'call_click'/);
+      assert.deepEqual(values, [20, 0]);
+      return { rows: callEvents };
+    }
+
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+
+  const response = await authenticatedRequest('/call');
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Call events/);
+  assert.match(html, /1800-121-410-410/);
+  assert.match(html, /navbar_mobile/);
+  assert.match(
+    html,
+    /href="\/call"\s+aria-current="page"/
+  );
 });
 
 test('JSON clients remain compatible and invalid pagination is normalized', async () => {
@@ -304,7 +355,9 @@ test('the admin stylesheet is served as a same-origin asset', async () => {
 });
 
 test('existing POST webhook routes continue to return JSON', async () => {
-  pool.query = async (query) => {
+  const eventInserts = [];
+
+  pool.query = async (query, values) => {
     const sql = String(query);
 
     if (sql.includes('INSERT INTO leads')) {
@@ -312,7 +365,17 @@ test('existing POST webhook routes continue to return JSON', async () => {
     }
 
     if (sql.includes('INSERT INTO events')) {
-      return { rows: [{ id: '202' }] };
+      eventInserts.push(values);
+      return {
+        rows: [
+          {
+            id:
+              values[0] === 'call_click'
+                ? '203'
+                : '202',
+          },
+        ],
+      };
     }
 
     throw new Error(`Unexpected query: ${sql}`);
@@ -359,4 +422,77 @@ test('existing POST webhook routes continue to return JSON', async () => {
     id: '202',
     message: 'WhatsApp event received.',
   });
+
+  response = await fetch(`${baseUrl}/call`, {
+    ...requestOptions,
+    body: JSON.stringify({
+      event_info: 'call_click',
+      page_name: 'Home',
+      text: '1800-121-410-410',
+      metadata: {
+        button_location: 'navbar',
+        page_url:
+          'https://example.test/?utm_source=google',
+        pathname: '/',
+        phone_number: '1800121410410',
+        utm_source: 'google',
+      },
+    }),
+  });
+  payload = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.deepEqual(payload, {
+    success: true,
+    id: '203',
+    message: 'Call event received.',
+  });
+  assert.equal(eventInserts.at(-1)[0], 'call_click');
+
+  const storedMetadata = JSON.parse(
+    eventInserts.at(-1)[3]
+  );
+
+  assert.equal(storedMetadata.button_location, 'navbar');
+  assert.equal(storedMetadata.utm_source, 'google');
+  assert.equal(
+    storedMetadata.origin,
+    undefined
+  );
+  assert.equal(
+    storedMetadata.request.origin,
+    'https://example.test'
+  );
+});
+
+test('POST /call rejects payloads that are not call-click events', async () => {
+  pool.query = async () => {
+    throw new Error('The database should not be queried.');
+  };
+
+  const response = await fetch(`${baseUrl}/call`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      origin: 'https://example.test',
+    },
+    body: JSON.stringify({
+      event_info: 'not_a_call',
+      page_name: 'Home',
+      text: '1800-121-410-410',
+      metadata: {
+        button_location: 'footer',
+        page_url: 'https://example.test/',
+        pathname: '/',
+        phone_number: '1800121410410',
+      },
+    }),
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.success, false);
+  assert.equal(payload.error, 'Invalid request data.');
+  assert.ok(payload.fields.event_info);
+  assert.ok(payload.fields['metadata.button_location']);
 });

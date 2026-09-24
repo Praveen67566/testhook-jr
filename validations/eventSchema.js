@@ -28,3 +28,31 @@ export const whatsappEventPayloadSchema =
 
     metadata: metadataSchema,
   });
+
+export const callEventPayloadSchema =
+  z.strictObject({
+    event_info: z.literal('call_click'),
+
+    page_name: requiredString(500),
+
+    text: requiredString(5000),
+
+    metadata: z.strictObject({
+      button_location: z.enum([
+        'navbar',
+        'navbar_mobile',
+      ]),
+
+      page_url: requiredString(5000),
+
+      pathname: requiredString(2000),
+
+      phone_number: requiredString(100),
+
+      utm_source: requiredString(500).optional(),
+
+      utm_medium: requiredString(500).optional(),
+
+      utm_campaign: requiredString(500).optional(),
+    }),
+  });

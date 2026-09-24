@@ -29,6 +29,11 @@
             href="/whatsapp"
             <% if (activePage === 'whatsapp') { %>aria-current="page"<% } %>
           >WhatsApp events</a>
+          <a
+            class="primary-nav__link<%= activePage === 'call' ? ' is-active' : '' %>"
+            href="/call"
+            <% if (activePage === 'call') { %>aria-current="page"<% } %>
+          >Call events</a>
         </nav>
       </div>
     </header>

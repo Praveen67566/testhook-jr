@@ -1,0 +1,110 @@
+<%- include('partials/header', {
+  title: 'Call events',
+  activePage: 'call'
+}) %>
+
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">Click activity</p>
+    <h1>Call events</h1>
+    <p class="page-heading__description">
+      Inspect phone-link clicks and the page context captured with each event.
+    </p>
+  </div>
+
+  <a class="secondary-button" href="<%= pagination.jsonUrl %>">View JSON</a>
+</section>
+
+<section class="summary-grid" aria-label="Call event summary">
+  <article class="summary-card">
+    <span class="summary-card__label">Total events</span>
+    <strong class="summary-card__value"><%= total.toLocaleString('en-IN') %></strong>
+  </article>
+  <article class="summary-card">
+    <span class="summary-card__label">On this page</span>
+    <strong class="summary-card__value"><%= count.toLocaleString('en-IN') %></strong>
+  </article>
+  <article class="summary-card">
+    <span class="summary-card__label">Current page</span>
+    <strong class="summary-card__value"><%= page.toLocaleString('en-IN') %></strong>
+  </article>
+</section>
+
+<section class="data-panel" aria-labelledby="call-events-table-title">
+  <div class="data-panel__header">
+    <div>
+      <h2 id="call-events-table-title">Latest events</h2>
+      <p>Newest phone-link activity appears first.</p>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table class="data-table events-table">
+      <caption class="visually-hidden">Call events</caption>
+      <thead>
+        <tr>
+          <th scope="col">Received</th>
+          <th scope="col">Event</th>
+          <th scope="col">Page</th>
+          <th scope="col">Phone number</th>
+          <th scope="col">Review</th>
+          <th scope="col"><span class="visually-hidden">Metadata</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (events.length === 0) { %>
+          <tr class="empty-row">
+            <td colspan="6">
+              <div class="empty-state">
+                <span class="empty-state__mark" aria-hidden="true">0</span>
+                <strong>No call events found</strong>
+                <p>New phone-link click events will appear here.</p>
+              </div>
+            </td>
+          </tr>
+        <% } %>
+
+        <% for (const event of events) { %>
+          <tr>
+            <td data-label="Received">
+              <time datetime="<%= toIsoDate(event.event_time) %>"><%= formatAdminDate(event.event_time) %></time>
+              <span class="record-id">ID <%= event.id %></span>
+            </td>
+            <td data-label="Event">
+              <strong class="primary-value"><%= event.event_info %></strong>
+              <span class="secondary-value"><%= event.metadata?.button_location ?? '—' %></span>
+            </td>
+            <td data-label="Page">
+              <span class="secondary-value"><%= event.page_name %></span>
+            </td>
+            <td data-label="Phone number">
+              <span class="message-preview"><%= event.text %></span>
+            </td>
+            <td data-label="Review">
+              <% if (event.check_with_nyife) { %>
+                <span class="badge badge--green">Reviewed</span>
+              <% } else { %>
+                <span class="badge badge--amber">Pending</span>
+              <% } %>
+            </td>
+            <td data-label="Metadata" class="details-cell">
+              <details class="row-details">
+                <summary>View details</summary>
+                <div class="details-popover details-popover--metadata">
+                  <span class="detail-label">Phone number</span>
+                  <p class="full-message"><%= event.text %></p>
+                  <span class="detail-label">Metadata</span>
+                  <pre><%= formatMetadata(event.metadata) %></pre>
+                </div>
+              </details>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <%- include('partials/pagination', { pagination }) %>
+</section>
+
+<%- include('partials/footer') %>
