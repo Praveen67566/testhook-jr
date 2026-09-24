@@ -4,36 +4,59 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <title><%= title %> | JR Compliance Admin</title>
+    <title><%= title %> | Lead &amp; Events Admin</title>
     <link rel="stylesheet" href="/admin-assets/admin.css">
   </head>
   <body>
     <header class="site-header">
       <div class="site-header__inner">
-        <a class="brand" href="/leads" aria-label="JR Compliance Admin home">
-          <span class="brand__mark" aria-hidden="true">JR</span>
+        <a class="brand" href="/leads" aria-label="Lead and events admin home">
+          <span class="brand__mark" aria-hidden="true">J/N</span>
           <span>
-            <strong>JR Compliance</strong>
-            <small>Admin dashboard</small>
+            <strong>Lead &amp; Event Hub</strong>
+            <small>JR Compliance &middot; Nyife</small>
           </span>
         </a>
 
         <nav class="primary-nav" aria-label="Admin pages">
-          <a
-            class="primary-nav__link<%= activePage === 'leads' ? ' is-active' : '' %>"
-            href="/leads"
-            <% if (activePage === 'leads') { %>aria-current="page"<% } %>
-          >Leads</a>
-          <a
-            class="primary-nav__link<%= activePage === 'whatsapp' ? ' is-active' : '' %>"
-            href="/whatsapp"
-            <% if (activePage === 'whatsapp') { %>aria-current="page"<% } %>
-          >WhatsApp events</a>
-          <a
-            class="primary-nav__link<%= activePage === 'call' ? ' is-active' : '' %>"
-            href="/call"
-            <% if (activePage === 'call') { %>aria-current="page"<% } %>
-          >Call events</a>
+          <div class="primary-nav__group">
+            <span class="primary-nav__label">JR Compliance</span>
+            <div class="primary-nav__links">
+              <a
+                class="primary-nav__link<%= activePage === 'jr-leads' ? ' is-active' : '' %>"
+                href="/leads"
+                <% if (activePage === 'jr-leads') { %>aria-current="page"<% } %>
+              >Leads</a>
+              <a
+                class="primary-nav__link<%= activePage === 'jr-whatsapp' ? ' is-active' : '' %>"
+                href="/whatsapp"
+                <% if (activePage === 'jr-whatsapp') { %>aria-current="page"<% } %>
+              >WhatsApp</a>
+              <a
+                class="primary-nav__link<%= activePage === 'jr-call' ? ' is-active' : '' %>"
+                href="/call"
+                <% if (activePage === 'jr-call') { %>aria-current="page"<% } %>
+              >Calls</a>
+            </div>
+          </div>
+
+          <span class="primary-nav__divider" aria-hidden="true"></span>
+
+          <div class="primary-nav__group primary-nav__group--nyife">
+            <span class="primary-nav__label">Nyife</span>
+            <div class="primary-nav__links">
+              <a
+                class="primary-nav__link<%= activePage === 'nyife-leads' ? ' is-active' : '' %>"
+                href="/nyife/leads"
+                <% if (activePage === 'nyife-leads') { %>aria-current="page"<% } %>
+              >Leads</a>
+              <span
+                class="primary-nav__link primary-nav__link--disabled"
+                aria-disabled="true"
+                title="Nyife event tracking will be added in a future release"
+              >Events <small>Soon</small></span>
+            </div>
+          </div>
         </nav>
       </div>
     </header>

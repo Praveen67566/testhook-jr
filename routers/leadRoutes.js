@@ -9,6 +9,10 @@ import {
   createLeadHandler,
   getLeads,
 } from '../controllers/leadController.js';
+import {
+  createNyifeLead,
+  getNyifeLeads,
+} from '../controllers/nyifeLeadController.js';
 
 const router = Router();
 
@@ -42,10 +46,30 @@ for (const leadType of leadTypes) {
   );
 }
 
+router.options(
+  '/lead',
+  leadCors
+);
+
+router.post(
+  '/lead',
+  leadCors,
+  leadRateLimiter,
+  requireJsonContentType,
+  jsonParser,
+  createNyifeLead
+);
+
 router.get(
   '/leads',
   adminBasicAuth,
   getLeads
+);
+
+router.get(
+  '/nyife/leads',
+  adminBasicAuth,
+  getNyifeLeads
 );
 
 export default router;

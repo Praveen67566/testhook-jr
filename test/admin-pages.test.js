@@ -74,6 +74,7 @@ test('admin routes share one Basic Auth protection space', async () => {
     '/leads',
     '/whatsapp',
     '/call',
+    '/nyife/leads',
   ]) {
     const response = await fetch(`${baseUrl}${pathname}`);
 
@@ -92,10 +93,12 @@ test('GET /leads renders escaped lead data and pagination', async () => {
     const sql = String(query);
 
     if (sql.includes('COUNT(*)') && sql.includes('FROM leads')) {
+      assert.match(sql, /lead_type <> 'nyife'/);
       return { rows: [{ total: '25' }] };
     }
 
     if (sql.includes('FROM leads')) {
+      assert.match(sql, /lead_type <> 'nyife'/);
       queryValues.push(values);
 
       return {
@@ -134,14 +137,73 @@ test('GET /leads renders escaped lead data and pagination', async () => {
     response.headers.get('content-type'),
     /^text\/html/
   );
-  assert.match(html, /<title>Leads \| JR Compliance Admin<\/title>/);
+  assert.match(html, /<title>JR Compliance leads \| Lead &amp; Events Admin<\/title>/);
   assert.match(html, /&lt;script&gt;alert\(&#34;xss&#34;\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>alert\("xss"\)<\/script>/);
   assert.match(html, /href="\/whatsapp"/);
   assert.match(html, /href="\/call"/);
+  assert.match(html, /href="\/nyife\/leads"/);
+  assert.match(html, /Events <small>Soon<\/small>/);
   assert.match(html, /href="\/leads\?page=1&amp;limit=20"/);
   assert.match(html, /href="\/leads\?page=2&amp;limit=20&amp;format=json"/);
   assert.deepEqual(queryValues, [[20, 20]]);
+});
+
+test('GET /nyife/leads renders a separate Nyife lead inbox', async () => {
+  const nyifeLeads = [
+    {
+      id: '40',
+      name: 'Nyife User',
+      email: 'nyife@example.test',
+      phone: '+91 98888 77777',
+      company: '<script>unsafe()</script>',
+      plan: 'Growth',
+      demo_date: '2026-09-30',
+      demo_time: '11:30',
+      page_name: '/ad/whatsapp-business-api',
+      form_name: 'Nyife - New Signup - Ads',
+      source: 'Google Ads',
+      utm_source: 'google',
+      utm_medium: 'cpc',
+      utm_campaign: 'whatsapp-api',
+      utm_term: 'business messaging',
+      utm_content: 'hero-form',
+      fbclid: null,
+      gclid: 'test-gclid',
+      created_at: new Date('2026-09-24T08:00:00.000Z'),
+    },
+  ];
+
+  pool.query = async (query, values) => {
+    const sql = String(query);
+
+    if (sql.includes('COUNT(*)') && sql.includes('FROM leads')) {
+      assert.match(sql, /lead_type = 'nyife'/);
+      return { rows: [{ total: '1' }] };
+    }
+
+    if (sql.includes('FROM leads')) {
+      assert.match(sql, /lead_type = 'nyife'/);
+      assert.deepEqual(values, [20, 0]);
+      return { rows: nyifeLeads };
+    }
+
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+
+  const response = await authenticatedRequest('/nyife/leads');
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Nyife leads/);
+  assert.match(html, /Growth/);
+  assert.match(html, /test-gclid/);
+  assert.match(html, /&lt;script&gt;unsafe\(\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>unsafe\(\)<\/script>/);
+  assert.match(
+    html,
+    /href="\/nyife\/leads"\s+aria-current="page"/
+  );
 });
 
 test('GET /whatsapp renders metadata safely and an empty state', async () => {
@@ -495,4 +557,105 @@ test('POST /call rejects payloads that are not call-click events', async () => {
   assert.equal(payload.error, 'Invalid request data.');
   assert.ok(payload.fields.event_info);
   assert.ok(payload.fields['metadata.button_location']);
+});
+
+test('POST /lead stores the complete Nyife lead independently', async () => {
+  let insertedValues;
+
+  pool.query = async (query, values) => {
+    const sql = String(query);
+
+    assert.match(sql, /INSERT INTO leads/);
+    assert.match(sql, /'nyife'/);
+    insertedValues = values;
+
+    return { rows: [{ id: '301' }] };
+  };
+
+  const response = await fetch(`${baseUrl}/lead`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      origin: 'https://example.test',
+    },
+    body: JSON.stringify({
+      name: 'Nyife User',
+      email: 'nyife@example.test',
+      phone: '+91 98888 77777',
+      company: 'Example Company',
+      plan: 'Growth',
+      demo_date: '2026-09-30',
+      demo_time: '11:30',
+      page_name: '/ad/whatsapp-business-api',
+      form_name: 'Nyife - New Signup - Ads',
+      source: 'Google Ads',
+      page_parameters: {
+        utm_source: 'google',
+        utm_medium: 'cpc',
+        utm_campaign: 'whatsapp-api',
+        utm_term: 'business messaging',
+        utm_content: 'hero-form',
+        fbclid: 'test-fbclid',
+        gclid: 'test-gclid',
+      },
+    }),
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.deepEqual(payload, {
+    success: true,
+    id: '301',
+    message: 'Nyife lead received.',
+  });
+  assert.deepEqual(insertedValues, [
+    'Nyife User',
+    'nyife@example.test',
+    '+91 98888 77777',
+    'Example Company',
+    'Growth',
+    '2026-09-30',
+    '11:30',
+    '/ad/whatsapp-business-api',
+    'Nyife - New Signup - Ads',
+    'Google Ads',
+    'google',
+    'cpc',
+    'whatsapp-api',
+    'business messaging',
+    'hero-form',
+    'test-fbclid',
+    'test-gclid',
+  ]);
+});
+
+test('POST /lead validates Nyife lead data before querying the database', async () => {
+  pool.query = async () => {
+    throw new Error('The database should not be queried.');
+  };
+
+  const response = await fetch(`${baseUrl}/lead`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      origin: 'https://example.test',
+    },
+    body: JSON.stringify({
+      name: '',
+      email: 'not-an-email',
+      phone: '12',
+      page_parameters: {
+        unexpected: 'value',
+      },
+    }),
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.success, false);
+  assert.equal(payload.error, 'Invalid request data.');
+  assert.ok(payload.fields.name);
+  assert.ok(payload.fields.email);
+  assert.ok(payload.fields.phone);
+  assert.ok(payload.fields.page_parameters);
 });

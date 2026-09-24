@@ -1,21 +1,21 @@
 <%- include('partials/header', {
-  title: 'JR Compliance leads',
-  activePage: 'jr-leads'
+  title: 'Nyife leads',
+  activePage: 'nyife-leads'
 }) %>
 
 <section class="page-heading">
   <div>
-    <p class="eyebrow">JR Compliance</p>
-    <h1>JR Compliance leads</h1>
+    <p class="eyebrow eyebrow--nyife">Nyife</p>
+    <h1>Nyife leads</h1>
     <p class="page-heading__description">
-      Review contact requests submitted through JR Compliance lead forms.
+      Review demo and signup requests submitted through Nyife landing pages.
     </p>
   </div>
 
   <a class="secondary-button" href="<%= pagination.jsonUrl %>">View JSON</a>
 </section>
 
-<section class="summary-grid" aria-label="Lead summary">
+<section class="summary-grid" aria-label="Nyife lead summary">
   <article class="summary-card">
     <span class="summary-card__label">Total leads</span>
     <strong class="summary-card__value"><%= total.toLocaleString('en-IN') %></strong>
@@ -30,24 +30,24 @@
   </article>
 </section>
 
-<section class="data-panel" aria-labelledby="leads-table-title">
+<section class="data-panel" aria-labelledby="nyife-leads-table-title">
   <div class="data-panel__header">
     <div>
-      <h2 id="leads-table-title">Latest submissions</h2>
-      <p>Newest leads appear first.</p>
+      <h2 id="nyife-leads-table-title">Latest submissions</h2>
+      <p>Newest Nyife leads appear first.</p>
     </div>
   </div>
 
   <div class="table-scroll">
-    <table class="data-table leads-table">
-      <caption class="visually-hidden">Lead submissions</caption>
+    <table class="data-table nyife-leads-table">
+      <caption class="visually-hidden">Nyife lead submissions</caption>
       <thead>
         <tr>
           <th scope="col">Received</th>
           <th scope="col">Contact</th>
-          <th scope="col">Type</th>
-          <th scope="col">Status</th>
-          <th scope="col">Source</th>
+          <th scope="col">Company</th>
+          <th scope="col">Plan</th>
+          <th scope="col">Demo</th>
           <th scope="col"><span class="visually-hidden">Details</span></th>
         </tr>
       </thead>
@@ -56,9 +56,9 @@
           <tr class="empty-row">
             <td colspan="6">
               <div class="empty-state">
-                <span class="empty-state__mark" aria-hidden="true">0</span>
-                <strong>No leads found</strong>
-                <p>New lead form submissions will appear here.</p>
+                <span class="empty-state__mark empty-state__mark--nyife" aria-hidden="true">0</span>
+                <strong>No Nyife leads found</strong>
+                <p>New Nyife signup submissions will appear here.</p>
               </div>
             </td>
           </tr>
@@ -75,26 +75,27 @@
               <a class="contact-link" href="mailto:<%= lead.email %>"><%= lead.email %></a>
               <a class="contact-link" href="tel:<%= lead.phone %>"><%= lead.phone %></a>
             </td>
-            <td data-label="Type">
-              <span class="badge badge--blue"><%= lead.lead_type %></span>
+            <td data-label="Company">
+              <span class="secondary-value"><%= lead.company || '—' %></span>
             </td>
-            <td data-label="Status">
-              <strong class="secondary-value"><%= lead.stage || 'Not set' %></strong>
-              <span class="muted-value"><%= lead.responsible || 'Unassigned' %></span>
+            <td data-label="Plan">
+              <% if (lead.plan) { %>
+                <span class="badge badge--violet"><%= lead.plan %></span>
+              <% } else { %>
+                <span class="muted-value">Not selected</span>
+              <% } %>
             </td>
-            <td data-label="Source">
-              <strong class="secondary-value"><%= lead.page_name || '—' %></strong>
-              <span class="muted-value text-break"><%= lead.form_name || lead.source || 'No source details' %></span>
+            <td data-label="Demo">
+              <strong class="secondary-value"><%= lead.demo_date || 'Not scheduled' %></strong>
+              <% if (lead.demo_time) { %>
+                <span class="muted-value"><%= lead.demo_time %></span>
+              <% } %>
             </td>
             <td data-label="Details" class="details-cell">
               <details class="row-details">
                 <summary>View details</summary>
                 <div class="details-popover">
                   <dl class="detail-grid">
-                    <div class="detail-grid__wide">
-                      <dt>Message</dt>
-                      <dd class="preserve-lines"><%= lead.message || '—' %></dd>
-                    </div>
                     <div>
                       <dt>Page</dt>
                       <dd><%= lead.page_name || '—' %></dd>
@@ -104,7 +105,7 @@
                       <dd><%= lead.form_name || '—' %></dd>
                     </div>
                     <div class="detail-grid__wide">
-                      <dt>Source</dt>
+                      <dt>Ad source</dt>
                       <dd class="text-break"><%= lead.source || '—' %></dd>
                     </div>
                     <div>
@@ -118,6 +119,22 @@
                     <div>
                       <dt>UTM campaign</dt>
                       <dd><%= lead.utm_campaign || '—' %></dd>
+                    </div>
+                    <div>
+                      <dt>UTM term</dt>
+                      <dd><%= lead.utm_term || '—' %></dd>
+                    </div>
+                    <div>
+                      <dt>UTM content</dt>
+                      <dd><%= lead.utm_content || '—' %></dd>
+                    </div>
+                    <div>
+                      <dt>Facebook click ID</dt>
+                      <dd><%= lead.fbclid || '—' %></dd>
+                    </div>
+                    <div class="detail-grid__wide">
+                      <dt>Google click ID</dt>
+                      <dd><%= lead.gclid || '—' %></dd>
                     </div>
                   </dl>
                 </div>
